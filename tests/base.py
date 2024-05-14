@@ -115,7 +115,11 @@ class SD_VM_Local_Test(unittest.TestCase):
         return True
 
     def _service_is_active(self, service):
-        results = self._run("sudo systemctl is-active {}".format(service))
+        try:
+            results = self._run("sudo systemctl is-active {}".format(service))
+        except CalledProcessError:
+            if e.returncode == 3:
+                return False  # exit code 3 == inactive
         return results == "active"
 
     def assertFilesMatch(self, remote_path, local_path):

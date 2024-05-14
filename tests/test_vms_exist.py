@@ -39,9 +39,13 @@ class SD_VM_Tests(unittest.TestCase):
         Ensures a given service is running inside a given VM.
         Uses systemctl is-active to query the service state.
         """
-        cmd = "systemctl is-active {}".format(service)
-        stdout, stderr = vm.run(cmd)
-        service_status = stdout.decode("utf-8").rstrip()
+        try:
+            cmd = "systemctl is-active {}".format(service)
+            stdout, stderr = vm.run(cmd)
+            service_status = stdout.decode("utf-8").rstrip()
+        except CalledProcessError:
+            if e.returncode == 3:
+                service_status = "inactive"
         self.assertTrue(service_status == "active" if running else "inactive")
 
     def test_sd_whonix_config(self):
@@ -75,7 +79,7 @@ class SD_VM_Tests(unittest.TestCase):
         self.assertFalse(vm.template_for_dispvms)
         self._check_kernel(vm)
         self._check_service_running(vm, "paxctld")
-        self._check_service_running(vm, "securedrop-log", False)
+        self.assertFalse(vm.features.get('service.securedrop-log-server', False))
         self.assertTrue("sd-workstation" in vm.tags)
         self.assertTrue("sd-client" in vm.tags)
         # Check the size of the private volume
@@ -87,7 +91,7 @@ class SD_VM_Tests(unittest.TestCase):
 
     def test_sd_viewer_config(self):
         vm = self.app.domains["sd-viewer"]
-        nvm = vm.netvm
+        nvm = vm.netvm_run
         self.assertTrue(nvm is None)
         self.assertTrue(vm.template == "sd-large-{}-template".format(DEBIAN_VERSION))
         self.assertFalse(vm.provides_network)
@@ -96,7 +100,8 @@ class SD_VM_Tests(unittest.TestCase):
         self.assertIsNone(vm.default_dispvm)
         self._check_kernel(vm)
         self._check_service_running(vm, "paxctld")
-        self._check_service_running(vm, "securedrop-log", False)
+        self._check_service_running(vm, "securedrop-log-client", False)
+        self._check_service_running(vm, "securedrop-log-server", False)
         self.assertTrue("sd-workstation" in vm.tags)
 
     def test_sd_gpg_config(self):
@@ -109,7 +114,7 @@ class SD_VM_Tests(unittest.TestCase):
         self.assertFalse(vm.provides_network)
         self.assertFalse(vm.template_for_dispvms)
         self._check_kernel(vm)
-        self._check_service_running(vm, "securedrop-log", False)
+        self._check_service_running(vm, "securedrop-log-client", False)
         self.assertTrue("sd-workstation" in vm.tags)
 
     def test_sd_log_config(self):
@@ -122,7 +127,9 @@ class SD_VM_Tests(unittest.TestCase):
         self.assertFalse(vm.template_for_dispvms)
         self._check_kernel(vm)
         self._check_service_running(vm, "paxctld")
-        self._check_service_running(vm, "securedrop-log")
+        self._check_service_running(vm, "securedrop-log-server")
+        self._check_service_running(vm, "securedrop-log-client")
+        self.assertTrue(vm.features['service.securedrop-log-server']=='1')
         self.assertFalse(vm.template_for_dispvms)
         self.assertTrue("sd-workstation" in vm.tags)
         # Check the size of the private volume
@@ -131,6 +138,12 @@ class SD_VM_Tests(unittest.TestCase):
         size = self.config["vmsizes"]["sd_log"]
         vol = vm.volumes["private"]
         self.assertEqual(vol.size, size * 1024 * 1024 * 1024)
+
+    def test_sd_log_template(self):
+        vm = self.app.domains["sd-small-{}-template".format(DEBIAN_VERSION)]
+        nvm = vm.netvm
+        self.assertTrue(nvm is None)
+        self.assertTrue("sd-workstation" in vm.tags)
 
     def test_sd_proxy_template(self):
         vm = self.app.domains["sd-small-{}-template".format(DEBIAN_VERSION)]

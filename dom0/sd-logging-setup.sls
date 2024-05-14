@@ -14,12 +14,6 @@ install-securedrop-log-package:
     - require:
       - sls: fpf-apt-repo
 
-# configure all VMs to send to sd-log - excluded on a per-VM basis below via /rw
-configure-rsyslog-for-sd:
-  file.managed:
-    - name: /etc/sd-rsyslog.conf
-    - source: "salt://sd-rsyslog.conf.j2"
-
 {% endif %}
 
 {% if grains['id'] == "sd-small-{}-template".format(grains['oscodename']) %}

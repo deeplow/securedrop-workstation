@@ -87,7 +87,7 @@ class SD_Proxy_Tests(SD_VM_Local_Test):
         self.mailcap_hardened()
 
     def test_logging_service_not_running(self):
-        self.assertFalse(self._service_is_active("securedrop-log-client", False))
+        self.assertFalse(self._service_is_active("securedrop-log-client"))
 
 
 def load_tests(loader, tests, pattern):

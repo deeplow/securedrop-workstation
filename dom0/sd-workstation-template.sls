@@ -29,6 +29,7 @@ sd-small-{{ sdvars.distribution }}-template:
     - features:
       - enable:
         - service.paxctld
+        - service.securedrop-log-client
     - require:
       - sls: sd-base-template
 
@@ -48,5 +49,6 @@ sd-large-{{ sdvars.distribution }}-template:
     - features:
       - enable:
         - service.paxctld
+        - service.securedrop-log-client
     - require:
       - sls: sd-base-template
